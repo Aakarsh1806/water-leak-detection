@@ -1,0 +1,6 @@
+{
+  "name": "Water Leak Detection System",
+  "description": "Comprehensive water leak detection, telemetry collector, multi-method detection engine, replay system, localization, and work order scheduler.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

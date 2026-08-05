@@ -1,0 +1,9 @@
+{
+  "run_id": "RUN_001",
+  "operator": "Manoj",
+  "date": "2026-08-03",
+  "leak_location": "Branch_A",
+  "leak_size_lpm": 1.25,
+  "pump_mode": "constant_12v",
+  "notes": "Standard Phase 2 validation run with solenoid valve injection."
+}

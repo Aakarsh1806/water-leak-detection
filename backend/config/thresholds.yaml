@@ -1,0 +1,21 @@
+mass_balance:
+  sigma_threshold: 3.0
+  persistence_seconds: 5
+  zero_flow_tolerance: 0.05
+
+current_signature:
+  drop_threshold_ma: 25.0
+  baseline_ma: 420.0
+
+mnf:
+  night_window_start: "01:00"
+  night_window_end: "05:00"
+  max_allowed_residual_lpm: 0.15
+
+cusum:
+  k_allowance: 0.15
+  h_decision_threshold: 5.0
+
+fusion:
+  high_alarm_confidence: 0.75
+  medium_alarm_confidence: 0.50

@@ -1,0 +1,187 @@
+import React from "react";
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from "recharts";
+import { Play, Square, ShieldAlert, Waves } from "lucide-react";
+
+interface LiveMonitorViewProps {
+  telemetryHistory: any[];
+  latestTelemetry: any;
+  onToggleLeak: (action: "OPEN" | "CLOSE", size?: number) => void;
+  onTogglePump: (state: boolean) => void;
+  onToggleAirBubbles: (state: boolean) => void;
+}
+
+export const LiveMonitorView: React.FC<LiveMonitorViewProps> = ({
+  telemetryHistory,
+  latestTelemetry,
+  onToggleLeak,
+  onTogglePump,
+  onToggleAirBubbles
+}) => {
+  const latest = latestTelemetry?.latest;
+  const isPumpOn = latestTelemetry?.pump_on ?? true;
+  const isLeakActive = latestTelemetry?.leak_active ?? false;
+  const airBubbles = latestTelemetry?.air_bubble_anomaly ?? false;
+
+  const chartData = telemetryHistory.map((item) => ({
+    time: new Date(item.ts * 1000).toLocaleTimeString([], { hour12: false, minute: '2-digit', second: '2-digit' }),
+    Qin: item.q_in,
+    Qout: item.q_out,
+    Residual: item.residual,
+    CurrentMA: item.current_ma
+  }));
+
+  return (
+    <div className="space-y-6">
+      {/* Top Controls Banner */}
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-bold text-slate-900 flex items-center space-x-2 tracking-tight">
+              <Waves className="w-6 h-6 text-blue-600" />
+              <span>Phase 1: Telemetry Pipeline & Hardware Control Bench</span>
+            </h2>
+            <p className="text-xs text-slate-500 mt-1">
+              Direct telemetry ingestion, Hall-effect pulse conversion (1Hz MQTT), and solenoid valve actuation.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Pump Control */}
+            <button
+              onClick={() => onTogglePump(!isPumpOn)}
+              className={`px-4 py-2 rounded-xl font-bold text-xs flex items-center space-x-2 transition shadow-2xs ${
+                isPumpOn
+                  ? "bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100"
+                  : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20"
+              }`}
+            >
+              {isPumpOn ? <Square className="w-3.5 h-3.5 fill-current" /> : <Play className="w-3.5 h-3.5 fill-current" />}
+              <span>{isPumpOn ? "Stop Pump (12V)" : "Start Pump"}</span>
+            </button>
+
+            {/* Leak Injector Buttons */}
+            {!isLeakActive ? (
+              <div className="flex items-center space-x-1.5 bg-slate-50 p-1.5 rounded-xl border border-slate-200/80">
+                <span className="text-xs text-slate-500 font-bold px-2">Inject Leak:</span>
+                <button
+                  onClick={() => onToggleLeak("OPEN", 0.50)}
+                  className="bg-white hover:bg-rose-50 border border-rose-200 text-rose-700 font-bold px-3 py-1.5 rounded-lg text-xs transition shadow-2xs"
+                >
+                  Small (0.5 LPM)
+                </button>
+                <button
+                  onClick={() => onToggleLeak("OPEN", 1.25)}
+                  className="bg-rose-50 hover:bg-rose-100 border border-rose-300 text-rose-800 font-extrabold px-3 py-1.5 rounded-lg text-xs transition shadow-2xs"
+                >
+                  Medium (1.25 LPM)
+                </button>
+                <button
+                  onClick={() => onToggleLeak("OPEN", 2.50)}
+                  className="bg-rose-600 text-white hover:bg-rose-700 font-black px-3.5 py-1.5 rounded-lg text-xs transition shadow-md shadow-rose-600/20"
+                >
+                  Large (2.5 LPM)
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => onToggleLeak("CLOSE")}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition shadow-md shadow-emerald-600/20 flex items-center space-x-2"
+              >
+                <ShieldAlert className="w-4 h-4" />
+                <span>Seal Leak (Close Solenoid)</span>
+              </button>
+            )}
+
+            {/* Air Bubble Anomaly Simulator */}
+            <button
+              onClick={() => onToggleAirBubbles(!airBubbles)}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition ${
+                airBubbles
+                  ? "bg-purple-50 border-purple-300 text-purple-700 shadow-2xs"
+                  : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+              }`}
+            >
+              Air Bubbles: {airBubbles ? "ON" : "OFF"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Metric Cards Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs">
+          <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Inlet Flow (Q_in)</div>
+          <div className="text-3xl font-extrabold text-blue-600 mt-2">{latest?.q_in ?? "0.00"} <span className="text-sm font-semibold text-slate-400">L/min</span></div>
+          <div className="text-[11px] font-medium text-slate-400 mt-1">YF-S201 Sensor 1 (K=456)</div>
+        </div>
+
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs">
+          <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Outlet Flow (Q_out)</div>
+          <div className="text-3xl font-extrabold text-cyan-600 mt-2">{latest?.q_out ?? "0.00"} <span className="text-sm font-semibold text-slate-400">L/min</span></div>
+          <div className="text-[11px] font-medium text-slate-400 mt-1">YF-S201 Sensor 2 (K=448)</div>
+        </div>
+
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs">
+          <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Mass Residual (ΔQ)</div>
+          <div className={`text-3xl font-black mt-2 ${
+            (latest?.residual ?? 0) > 0.3 ? "text-rose-600 animate-pulse" : "text-emerald-600"
+          }`}>
+            {latest?.residual ?? "0.00"} <span className="text-sm font-semibold text-slate-400">L/min</span>
+          </div>
+          <div className="text-[11px] font-medium text-slate-400 mt-1">Q_in - (Q_out + Q_branch)</div>
+        </div>
+
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs">
+          <div className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pump Load Current (I_mA)</div>
+          <div className="text-3xl font-extrabold text-amber-600 mt-2">{latest?.current_ma ?? "0.0"} <span className="text-sm font-semibold text-slate-400">mA</span></div>
+          <div className="text-[11px] font-medium text-slate-400 mt-1">INA219 High-Side Sensor</div>
+        </div>
+      </div>
+
+      {/* Live Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Flow Rates Chart */}
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs">
+          <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center justify-between">
+            <span>Flow Telemetry (Q_in vs Q_out)</span>
+            <span className="text-xs text-slate-400 font-mono font-medium">1Hz Stream</span>
+          </h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
+                <XAxis dataKey="time" stroke="#94A3B8" tick={{ fontSize: 11 }} />
+                <YAxis stroke="#94A3B8" domain={[0, 7]} tick={{ fontSize: 11 }} />
+                <Tooltip contentStyle={{ backgroundColor: '#FFFFFF', borderColor: '#E2E8F0', borderRadius: '12px', color: '#0F172A', fontSize: '12px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)' }} />
+                <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
+                <Line type="monotone" dataKey="Qin" name="Qin (Inlet)" stroke="#2563EB" strokeWidth={2.5} dot={false} />
+                <Line type="monotone" dataKey="Qout" name="Qout (Outlet)" stroke="#0891B2" strokeWidth={2.5} dot={false} />
+                <Line type="monotone" dataKey="Residual" name="Mass Differential ΔQ" stroke="#E11D48" strokeWidth={2.5} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Pump Current & Pressure Chart */}
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs">
+          <h3 className="text-sm font-bold text-slate-900 mb-4 flex items-center justify-between">
+            <span>Pump Motor Load Current (I_mA)</span>
+            <span className="text-xs text-slate-400 font-mono font-medium">INA219 Telemetry</span>
+          </h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
+                <XAxis dataKey="time" stroke="#94A3B8" tick={{ fontSize: 11 }} />
+                <YAxis stroke="#94A3B8" domain={[350, 450]} tick={{ fontSize: 11 }} />
+                <Tooltip contentStyle={{ backgroundColor: '#FFFFFF', borderColor: '#E2E8F0', borderRadius: '12px', color: '#0F172A', fontSize: '12px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)' }} />
+                <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
+                <Line type="monotone" dataKey="CurrentMA" name="Current (mA)" stroke="#D97706" strokeWidth={2.5} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};

@@ -1,0 +1,9 @@
+{
+  "run_id": "RUN_001",
+  "detection_latency_sec": 2.1,
+  "mass_balance_alarm": true,
+  "current_signature_alarm": true,
+  "fused_confidence": 0.88,
+  "localized_branch": "Branch_A",
+  "f1_score": 0.965
+}

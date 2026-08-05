@@ -1,0 +1,97 @@
+"""
+Configuration Loader
+Loads runtime system parameters from backend/config/settings.yaml into a unified config dictionary.
+"""
+import os
+import yaml
+from backend.utils.logger import logger
+
+class ConfigLoader:
+    _instance = None
+    _config = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(ConfigLoader, cls).__new__(cls)
+            cls._instance.load_config()
+        return cls._instance
+
+    def load_config(self, filepath: str = "backend/config/settings.yaml"):
+        if os.path.exists(filepath):
+            try:
+                with open(filepath, 'r') as f:
+                    self._config = yaml.safe_load(f)
+                    logger.info(f"Loaded dynamic configuration from {filepath}")
+            except Exception as e:
+                logger.error(f"Error loading {filepath}: {e}, using default fallback")
+                self._config = self.get_defaults()
+        else:
+            logger.warning(f"Config file {filepath} not found, using default fallback settings")
+            self._config = self.get_defaults()
+
+    def get_defaults(self):
+        return {
+            "mqtt": {"host": "localhost", "port": 1883, "topic": "rig/telemetry", "cmd_topic": "rig/cmd"},
+            "database": {"uri": "mongodb://localhost:27017", "name": "water_leak_detection"},
+            "detector": {
+                "sigma_multiplier": 3.0,
+                "persistence_seconds": 10,
+                "bias_lpm": 0.10,
+                "current_drop_threshold_ma": 20.0,
+                "cusum_slack_k": 0.15,
+                "cusum_decision_h": 3.0
+            }
+        }
+
+    def get(self, key_path: str, default=None):
+        keys = key_path.split(".")
+        val = self._config
+        for k in keys:
+            if isinstance(val, dict) and k in val:
+                val = val[k]
+            else:
+                return default
+        return val
+
+config_loader = ConfigLoader()
+
+
+class ThresholdsLoader:
+    """Loads backend/config/thresholds.yaml (per-detector tuning knobs) —
+    kept separate from settings.yaml (infra config) since calibration engineers
+    and infra changes shouldn't touch the same file."""
+    _instance = None
+    _thresholds = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(ThresholdsLoader, cls).__new__(cls)
+            cls._instance.load()
+        return cls._instance
+
+    def load(self, filepath: str = "backend/config/thresholds.yaml"):
+        try:
+            with open(filepath, 'r') as f:
+                self._thresholds = yaml.safe_load(f)
+                logger.info(f"Loaded detector thresholds from {filepath}")
+        except Exception as e:
+            logger.error(f"Error loading {filepath}: {e}, using built-in defaults")
+            self._thresholds = {
+                "mass_balance": {"sigma_threshold": 3.0, "persistence_seconds": 5, "zero_flow_tolerance": 0.05},
+                "current_signature": {"drop_threshold_ma": 25.0, "baseline_ma": 420.0},
+                "mnf": {"night_window_start": "01:00", "night_window_end": "05:00", "max_allowed_residual_lpm": 0.15},
+                "cusum": {"k_allowance": 0.15, "h_decision_threshold": 5.0},
+                "fusion": {"high_alarm_confidence": 0.75, "medium_alarm_confidence": 0.50}
+            }
+
+    def get(self, key_path: str, default=None):
+        keys = key_path.split(".")
+        val = self._thresholds
+        for k in keys:
+            if isinstance(val, dict) and k in val:
+                val = val[k]
+            else:
+                return default
+        return val
+
+thresholds_loader = ThresholdsLoader()
